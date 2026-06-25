@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sistema de Insumos · Bodega</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#0e1519; --bg2:#131c22; --surface:#1b252c; --surface2:#23313a;
+  --bd:#2d3e49; --tx:#eef2f3; --mu:#8a9fab; --sm:#a7bbc5;
+  --or:#c9a45e; --or2:#b88f48; --bl:#3b82f6; --gn:#22c55e;
+  --rd:#ef4444; --am:#f59e0b; --pu:#8b5cf6;
+  --display:'Syne',sans-serif; --body:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:var(--body)}
+
+.app{display:flex;height:100vh;overflow:hidden}
+.sb{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:0}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid var(--bd)}
+.sb-nav{flex:1;overflow-y:auto;padding:10px 0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;transition:.15s;font-size:13px;font-weight:500;color:var(--mu);border-left:3px solid transparent}
+.nav-item:hover{background:var(--surface);color:var(--tx)}
+.nav-item.on{background:var(--surface);color:var(--or);border-left-color:var(--or)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid var(--bd);background:var(--bg2);flex-shrink:0}
+.topbar h1{font-family:var(--display);font-size:16px;font-weight:800;flex:1}
+.body{flex:1;overflow-y:auto;padding:20px}
+.vw{display:none}.vw.on{display:block}
+.card{background:var(--surface);border:1px solid var(--bd);border-radius:12px;padding:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat-card{background:var(--surface);border:1px solid var(--bd);border-radius:12px;padding:18px}
+.stat-card .val{font-family:var(--mono);font-size:32px;font-weight:700;margin-top:6px}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-family:var(--mono);font-size:10px}
+.badge.ok{background:rgba(34,197,94,.15);color:var(--gn)}
+.badge.warn{background:rgba(245,158,11,.15);color:var(--am)}
+.badge.err{background:rgba(239,68,68,.15);color:var(--rd)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12.5px;font-weight:600}
+.bor{background:var(--or);color:#1c1608}
+.bgh{background:var(--surface2);color:var(--tx);border:1px solid var(--bd)}
+.fi{background:var(--surface2);border:1.5px solid var(--bd);border-radius:8px;color:var(--tx);padding:9px 12px;outline:none;width:100%}
+.inv-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(46,58,80,.4)}
+.stk-ctrl{display:flex;align-items:center;gap:6px}
+.stk-ctrl button{width:28px;height:28px;border-radius:7px;background:var(--surface2);color:var(--tx);cursor:pointer}
+.stk-ctrl input{width:56px;text-align:center;background:var(--surface2);border:1.5px solid var(--bd);color:var(--tx);font-weight:700}
+.toasts{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--bd);font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.2s}
+.ov.on{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;width:440px;padding:20px}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sb">
+    <div class="sb-logo">
+      <div style="font-family:var(--display);font-size:14px;font-weight:800">Sistema Bodega</div>
+      <div style="font-size:11px;color:var(--or)">Campamento Albemarle</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="nav-item on" onclick="goView('dash')">📊 Dashboard</div>
+      <div class="nav-item" onclick="goView('inv')">📦 Inventario / Stock</div>
+    </nav>
+    <div class="sb-foot">
+      <button class="btn bgh" style="width:100%" onclick="openSb()"> Cloud Sync</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="tb-title">Insumos Centralizados</h1>
+    </div>
+
+    <div class="body">
+      <div class="vw on" id="view-dash">
+        <div class="grid-4">
+          <div class="stat-card">
+            <div style="font-size:12px;color:var(--mu)">📦 TOTAL ITEMS</div>
+            <div class="val" id="d-total">0</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size:12px;color:var(--mu)">⚠️ ALERTAS CRÍTICAS</div>
+            <div class="val" id="d-alert" style="color:var(--am)">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vw" id="view-inv">
+        <div style="margin-bottom:14px;display:flex;gap:10px">
+          <button class="btn bor" onclick="openAddInsumo()">+ Añadir Insumo</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div id="inv-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ov-sb">
+  <div class="modal">
+    <h3>Sincronización en la Nube</h3>
+    <p style="font-size:13px;color:var(--mu);margin:10px 0">Sube y descarga el inventario directo en Supabase.</p>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn bor" onclick="sbPushInv()">Subir Datos</button>
+      <button class="btn bgh" onclick="sbPullInv()">Bajar Datos</button>
+    </div>
+    <pre id="sb-log" style="background:#000;padding:10px;border-radius:6px;font-size:11px;color:var(--gn);margin-top:14px;max-height:100px;overflow-y:auto">Listo.</pre>
+  </div>
+</div>
+
+<div class="ov" id="ov-insumo">
+  <div class="modal">
+    <h3>Guardar Insumo</h3>
+    <div class="fi-wrap" style="margin-top:10px">
+      <label style="font-size:11px;color:var(--mu)">Código</label>
+      <input class="fi" id="ep-cod" placeholder="INS-001">
+    </div>
+    <div class="fi-wrap" style="margin-top:10px">
+      <label style="font-size:11px;color:var(--mu)">Nombre</label>
+      <input class="fi" id="ep-nom" placeholder="Ej: Detergente Industrial">
+    </div>
+    <div class="fi-wrap" style="margin-top:10px">
+      <label style="font-size:11px;color:var(--mu)">Stock Actual</label>
+      <input class="fi" type="number" id="ep-stk" value="10">
+    </div>
+    <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn bgh" onclick="closeOv('ov-insumo')">Cancelar</button>
+      <button class="btn bor" onclick="saveInsumo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ===================== CENTRALIZADO BODEGA ===================== */
+const SB_URL='https://npqjreuupuijfbfkujgy.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wcWpyZXVwdWlqaWZiZmt1amd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MjgzNzYsImV4cCI6MjA5ODAwNDM3Nn0.EmPenU0BO24aBFvSAQyAMDI8XH6wcZULHNaCPakMLvk';
+const SB_ENABLED=true; // ← ACTIVADO PARA COMUNICACIÓN GLOBAL
+
+const DB_KEY = 'insumos_db';
+let S = { inv: [], sols: [] };
+let _sb = null;
+
+function persist(){ localStorage.setItem(DB_KEY, JSON.stringify({inv:S.inv})); }
+function loadDb(){ try{const d=JSON.parse(localStorage.getItem(DB_KEY));if(d)S.inv=d.inv||[];}catch(e){} }
+
+function goView(id){
+  document.querySelectorAll('.vw').forEach(v=>v.classList.remove('on'));
+  document.getElementById('view-'+id).classList.add('on');
+  if(id==='dash') renderDash();
+  if(id==='inv') renderInv();
+}
+
+function renderDash(){
+  document.getElementById('d-total').textContent = S.inv.length;
+  document.getElementById('d-alert').textContent = S.inv.filter(x=>x.stk<=2).length;
+}
+
+function renderInv(){
+  const el = document.getElementById('inv-list');
+  if(!S.inv.length){ el.innerHTML='<p style="padding:20px;color:var(--mu)">Inventario vacío.</p>'; return; }
+  el.innerHTML = S.inv.map(e=>`
+    <div class="inv-row">
+      <div style="flex:1"><strong>${e.nom}</strong> <span style="font-size:11px;color:var(--mu)">(${e.cod})</span></div>
+      <div class="stk-ctrl">
+        <button onclick="adjStk(${e.id},-1)">-</button>
+        <input type="number" value="${e.stk}" readonly>
+        <button onclick="adjStk(${e.id},1)">+</button>
+      </div>
+    </div>`).join('');
+}
+
+function adjStk(id, d){
+  const e = S.inv.find(x=>x.id===id); if(!e) return;
+  e.stk = Math.max(0, e.stk+d); persist(); renderInv();
+  if(_sb) _sb.from('insumos_inventario').upsert({cod:e.cod, nom:e.nom, stk:e.stk, min:2});
+}
+
+function openAddInsumo(){ openOv('ov-insumo'); }
+function saveInsumo(){
+  const nom = document.getElementById('ep-nom').value.trim();
+  const cod = document.getElementById('ep-cod').value.trim();
+  const stk = parseInt(document.getElementById('ep-stk').value)||0;
+  if(!nom||!cod) return;
+  const nuevo = {id:Date.now(), cod, nom, stk};
+  S.inv.push(nuevo); persist(); closeOv('ov-insumo'); renderInv();
+  if(_sb) _sb.from('insumos_inventario').upsert({cod, nom, stk, min:2});
+}
+
+function sbLog(m){ document.getElementById('sb-log').textContent += '\n' + m; }
+function openSb(){ openOv('ov-sb'); }
+function openOv(id){ document.getElementById(id).classList.add('on'); }
+function closeOv(id){ document.getElementById(id).classList.remove('on'); }
+
+async function sbIniciar(){
+  if(!SB_ENABLED) return;
+  _sb = supabase.createClient(SB_URL, SB_KEY);
+  sbLog('✅ Conectado a la red central.');
+}
+
+async function sbPushInv(){
+  if(!_sb) return;
+  const rows = S.inv.map(e=>({cod:e.cod, nom:e.nom, stk:e.stk, min:2}));
+  await _sb.from('insumos_inventario').upsert(rows);
+  sbLog('📦 Base de Bodega enviada a la nube.');
+}
+
+async function sbPullInv(){
+  if(!_sb) return;
+  const {data} = await _sb.from('insumos_inventario').select('*');
+  if(data){
+    S.inv = data.map((x,i)=>({id:i, cod:x.cod, nom:x.nom, stk:x.stk}));
+    persist(); renderInv(); sbLog('⬇ Descargado stock de la nube.');
+  }
+}
+
+loadDb(); sbIniciar(); renderDash();
+</script>
+</body>
+</html>

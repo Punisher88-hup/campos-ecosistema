@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solicitud de Mantención · OT</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:sans-serif;background:#0a0f1e;color:#e2e8f0;padding:20px}
+.card{background:#111827;border:1px solid #1e2d45;padding:20px;border-radius:12px;max-width:400px;margin:0 auto}
+.fi{width:100%;padding:12px;background:#1a2236;border:1px solid #1e2d45;color:#fff;border-radius:8px;margin-bottom:12px;outline:none}
+.btn{width:100%;padding:14px;background:#f97316;color:#000;font-weight:700;border:none;border-radius:8px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="card" id="form-view">
+  <h3>Nueva Orden de Trabajo</h3>
+  <p style="color:#64748b;font-size:13px;margin-bottom:16px">Campamento Albemarle</p>
+
+  <label style="font-size:12px">Número de Habitación / Área</label>
+  <input class="fi" type="text" id="f-hab" placeholder="Ej: 101 o Casino">
+
+  <label style="font-size:12px">Descripción de la Falla</label>
+  <textarea class="fi" id="f-desc" rows="3" placeholder="Detalle del problema..."></textarea>
+
+  <button class="btn" onclick="enviarOT()">📋 Abrir OT</button>
+</div>
+
+<div class="card" id="success-view" style="display:none;text-align:center">
+  <h3>¡OT Registrada!</h3>
+  <p style="color:#64748b;margin-top:10px">Se notificó inmediatamente al panel del censo.</p>
+  <div id="lbl-ot" style="font-size:22px;color:#f97316;font-weight:700;margin-top:14px">OT-2026-0000</div>
+</div>
+
+<script>
+const SUPABASE_URL='https://npqjreuupuijfbfkujgy.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wcWpyZXVwdWlqaWZiZmt1amd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MjgzNzYsImV4cCI6MjA5ODAwNDM3Nn0.EmPenU0BO24aBFvSAQyAMDI8XH6wcZULHNaCPakMLvk';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+async function enviarOT() {
+  const hab=document.getElementById('f-hab').value.trim();
+  const desc=document.getElementById('f-desc').value.trim();
+  if(!hab||!desc) return;
+
+  const numero_ot=`OT-${new Date().getFullYear()}-${Math.floor(1000+Math.random()*9000)}`;
+
+  try{
+    const {error}=await sb.from('ordenes_trabajo').insert({
+      numero_ot, habitacion:parseInt(hab)||0, obs_inicial:desc, estado:'Abierta', prioridad:'Normal', fecha_apertura:new Date().toISOString()
+    });
+    if(error)throw error;
+    document.getElementById('lbl-ot').textContent=numero_ot;
+    document.getElementById('form-view').style.display='none';
+    document.getElementById('success-view').style.display='block';
+  }catch(e){
+    alert('Error: '+e.message);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Check-in · Albemarle</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#efe9df; --card:#ffffff; --dark:#2a2723; --dark-2:#403a32;
+  --cream:#f4f1ea; --cream-2:#faf8f3; --line:#e7e2d8; --line-2:#f0ebe1;
+  --txt:#2a2723; --muted:#8a847a; --muted-d:#b9b1a4;
+  --accent:#c2613b; --accent-soft:#f6e7df;
+  --green:#2f8a57; --red:#b8483a; --red-soft:#f6e3e0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hanken Grotesk',sans-serif;background:var(--bg);color:var(--txt);padding:20px}
+.shell{max-width:440px;margin:0 auto;background:var(--card);padding:24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.05)}
+.f{margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--muted)}
+.ni{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--cream-2);outline:none}
+.ni:focus{border-color:var(--accent);background:#fff}
+.btn{width:100%;padding:14px;background:var(--dark);color:var(--cream);border:none;border-radius:8px;font-weight:700;cursor:pointer;margin-top:10px}
+.btn:hover{background:var(--dark-2)}
+.success{display:none;text-align:center;padding:40px 10px}
+.folio-num{font-family:monospace;font-size:22px;color:var(--accent);font-weight:700;margin-top:10px}
+</style>
+</head>
+<body>
+
+<div class="shell" id="form-shell">
+  <h2 style="margin-bottom:4px">campOS</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:20px">Auto Check-in · Campamento Albemarle</p>
+  
+  <div class="f">
+    <label>Nombre completo</label>
+    <input class="ni" type="text" id="f-nombre" placeholder="Juan Pérez">
+  </div>
+  <div class="f">
+    <label>RUT</label>
+    <input class="ni" type="text" id="f-rut" placeholder="12345678-9">
+  </div>
+  <div class="f">
+    <label>Empresa</label>
+    <input class="ni" type="text" id="f-empresa" placeholder="Empresa Contratista">
+  </div>
+  <div class="f">
+    <label>Fecha Ingreso</label>
+    <input class="ni" type="date" id="f-ingreso">
+  </div>
+  <div class="f">
+    <label>Fecha Salida Estimada</label>
+    <input class="ni" type="date" id="f-salida">
+  </div>
+
+  <button class="btn" onclick="enviarCheckin()">Enviar Registro</button>
+</div>
+
+<div class="success" id="success-view">
+  <h3>¡Registro Recibido!</h3>
+  <p style="color:var(--muted);margin-top:8px">Preséntate en recepción para la entrega de llaves.</p>
+  <div class="folio-num" id="lbl-folio">CHK-2026-0000</div>
+</div>
+
+<script>
+const SB_URL='https://npqjreuupuijfbfkujgy.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wcWpyZXVwdWlqaWZiZmt1amd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MjgzNzYsImV4cCI6MjA5ODAwNDM3Nn0.EmPenU0BO24aBFvSAQyAMDI8XH6wcZULHNaCPakMLvk';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+async function enviarCheckin() {
+  const nom=document.getElementById('f-nombre').value.trim();
+  const rut=document.getElementById('f-rut').value.trim();
+  const emp=document.getElementById('f-empresa').value.trim();
+  const ing=document.getElementById('f-ingreso').value;
+  const sal=document.getElementById('f-salida').value;
+  
+  if(!nom||!rut||!emp||!ing||!sal){alert('Por favor completa todos los campos obligatorios');return;}
+  
+  const folio=`CHK-${new Date().getFullYear()}-${Math.floor(1000+Math.random()*9000)}`;
+  
+  try{
+    const {error}=await sb.from('checkins').insert({
+      folio, nombre_completo:nom, rut:rut.replace(/[.\-]/g,''),
+      empresa:emp, fecha_entrada:ing, fecha_salida_estimada:sal, estado:'pendiente'
+    });
+    if(error)throw error;
+    document.getElementById('lbl-folio').textContent=folio;
+    document.getElementById('form-shell').style.display='none';
+    document.getElementById('success-view').style.display='block';
+  }catch(e){
+    alert('Error de conexión: '+e.message);
+  }
+}
+</script>
+</body>
+</html>
