@@ -439,7 +439,7 @@ alter table public.habitaciones replica identity full;
 -- Las apps leen esta fila al abrir. Si publicas en otras direcciones de Netlify,
 -- cambia SOLO este valor (no hace falta tocar los HTML).
 insert into public.epp_config (clave, valor) values ('campos_apps',
-  '{"censo":"https://censo-2026.netlify.app/","mant":"https://mantencion-albemarle.netlify.app/","areas":"https://areas-albemarle.netlify.app/"}')
+  '{"censo":"https://censo-2026.netlify.app/","mant":"https://mantencion-albemarle-6d34.netlify.app/","areas":"https://areas-albemarle.netlify.app/"}')
 on conflict (clave) do nothing;
 -- update public.epp_config set valor = '{"censo":"https://...","mant":"https://...","areas":"https://..."}' where clave = 'campos_apps';
 

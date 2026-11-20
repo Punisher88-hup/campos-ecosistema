@@ -1485,7 +1485,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ── Sistema campOS · 3 apps vinculadas por Supabase ──
 const APP_ID = 'mant';
-const APP_URLS = {"censo": "https://censo-2026.netlify.app/", "mant": "https://mantencion-albemarle.netlify.app/", "areas": "https://areas-albemarle.netlify.app/"};
+const APP_URLS = {"censo": "https://censo-2026.netlify.app/", "mant": "https://mantencion-albemarle-6d34.netlify.app/", "areas": "https://areas-albemarle.netlify.app/"};
 sb.from('epp_config').select('valor').eq('clave','campos_apps').maybeSingle().then(r=>{ try{ const v=r.data&&r.data.valor; const o=typeof v==='string'?JSON.parse(v):v; if(o) Object.assign(APP_URLS,o); }catch(e){} });
 function irApp(a,params){ location.href=APP_URLS[a]+(params?'?'+params:''); }
 

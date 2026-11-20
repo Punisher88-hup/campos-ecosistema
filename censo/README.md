@@ -27,7 +27,7 @@ Crea un sitio por app con esta configuración:
 | Sitio | Branch | Base directory | Build command | Publish directory |
 |---|---|---|---|---|
 | censo-2026 (el actual) | main | `censo/censo` | *(vacío)* | `censo/censo` |
-| mantencion-albemarle | main | `censo/mantencion` | *(vacío)* | `censo/mantencion` |
+| mantencion-albemarle-6d34 | main | `censo/mantencion` | *(vacío)* | `censo/mantencion` |
 | areas-albemarle | main | `censo/areas-comunes` | *(vacío)* | `censo/areas-comunes` |
 
 Desde ese momento cada `git push` a `main` actualiza las tres apps solas.
